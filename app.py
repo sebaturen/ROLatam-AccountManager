@@ -50,6 +50,7 @@ class AccountManager(discord.Client):
             await self.target_msg.edit(content=f"{acc_msg}")
 
     async def make_account_msg(self):
+        now = datetime.now().strftime("%M:%S")
         # formating     ----
         pj_col_with = 13
         email_col_with = 33
@@ -77,7 +78,7 @@ class AccountManager(discord.Client):
             acc_dump.append(acc_info)
 
         acc_joined = "\n".join(acc_dump)
-        return f"```{acc_joined}```"
+        return f"```{acc_joined}```\nLastUpdate: {now}"
 
 # Discord bot Intents (permissions):
 intents = discord.Intents.default()
