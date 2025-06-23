@@ -50,7 +50,7 @@ class AccountManager(discord.Client):
             await self.target_msg.edit(content=f"{acc_msg}")
 
     async def make_account_msg(self):
-        now = datetime.now().strftime("%M:%S")
+        now = datetime.now().strftime("%H:%M:%S")
         # formating     ----
         pj_col_with = 13
         email_col_with = 33
