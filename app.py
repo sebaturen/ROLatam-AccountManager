@@ -14,8 +14,7 @@ MESSAGE_ID = os.getenv('MESSAGE_ID')
 
 class AccountManager(discord.Client):
     target_msg = None
-    with open('accounts.json') as f:
-        accounts = json.load(f)['accounts']
+    accounts = None
 
     async def on_ready(self):
         print(f'Logged on as {self.user}!')
@@ -43,8 +42,12 @@ class AccountManager(discord.Client):
         self.update_accounts.start()
 
     @tasks.loop(seconds=30.0)
-    async def update_accounts(self):
+    async def update_accounts(self):            
         if self.target_msg:
+
+            with open('accounts.json') as f:
+                self.accounts = json.load(f)['accounts']
+
             now = datetime.now().strftime("%H:%M:%S")
             acc_msg = await self.make_account_msg()
             await self.target_msg.edit(content=f"{acc_msg}")
