@@ -12,18 +12,27 @@ DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 ACCOUNT_CHANNEL = os.getenv('ACCOUNT_CHANNEL')
 MESSAGE_ID = os.getenv('MESSAGE_ID')
 
+# formating     ----
+COL_WITH_PJ = 13
+COL_WITH_EMAIL = 33
+COL_WITH_PASS = 18
+COL_WITH_PIN = 7
+# end formating ----
+
 class AccountManager(discord.Client):
-    target_msg = None
+    channel = None
+    target_msg = []
     accounts = None
 
     async def on_ready(self):
         print(f'Logged on as {self.user}!')
 
-        channel = await self.fetch_channel(ACCOUNT_CHANNEL)
+        self.channel = await self.fetch_channel(ACCOUNT_CHANNEL)
         if not MESSAGE_ID:
             await channel.send("COPY MSG ID")
         else:
-            self.target_msg = await channel.fetch_message(MESSAGE_ID)
+            msg = await self.channel.fetch_message(MESSAGE_ID)
+            self.target_msg.append(msg)
             await self.start_aligned_loop()
 
     async def start_aligned_loop(self):
@@ -42,28 +51,47 @@ class AccountManager(discord.Client):
         self.update_accounts.start()
 
     @tasks.loop(seconds=30.0)
-    async def update_accounts(self):            
+    async def update_accounts(self):
         if self.target_msg:
 
             with open('accounts.json') as f:
                 self.accounts = json.load(f)['accounts']
 
             now = datetime.now().strftime("%H:%M:%S")
-            acc_msg = await self.make_account_msg()
-            await self.target_msg.edit(content=f"{acc_msg}")
+            acc_details = await self.get_accounts()
 
-    async def make_account_msg(self):
-        now = datetime.now().strftime("%H:%M:%S")
-        # formating     ----
-        pj_col_with = 13
-        email_col_with = 33
-        pass_col_with = 18
-        pin_pass_col_with = 6
-        # end formating ----
+
+            sep_line = f"+-{'-' * COL_WITH_PJ}+-{'-' * COL_WITH_EMAIL}+-{'-' * COL_WITH_PASS}+-{'-' * COL_WITH_PIN}+-{'-' * COL_WITH_PIN}+-{'-' * COL_WITH_PIN}+"
+            header = f"\n{sep_line}\n{acc_details.pop(0)}\n{sep_line}"
+            acc_msg = header
+            i = 0
+
+            while len(acc_details) > 0:
+                acc_msg += f"\n{acc_details.pop(0)}"
+                acc_msg += f"\n{sep_line}"
+
+                if len(acc_details) == 0 or ( (len(acc_msg) + len(acc_details[0]) + len(sep_line)) >= 1900):
+                    if len(self.target_msg) <= i:
+                        await self.next_mssg(self.target_msg[i-1])
+                    final_msg = f"```{acc_msg}```"
+                    if len(acc_details) == 0:
+                        final_msg += f"\nLastUpdate: {now}"
+                    await self.target_msg[i].edit(content=final_msg)
+                    i += 1
+                    acc_msg = header
+    
+    async def next_mssg(self, pre_msg):
+        async for msg in self.channel.history(after=pre_msg, limit=1, oldest_first=True):
+            self.target_msg.append(msg)
+            return
+        
+        new_msg = await self.channel.send("adding...")
+        self.target_msg.append(new_msg)
+
+    async def get_accounts(self):
 
         acc_dump = []
-        acc_dump.append(f"{'PJ':<{pj_col_with}}| {'Email':<{email_col_with}}| {'Password':<{pass_col_with}}| {'Pin':<{pin_pass_col_with}}| {'Kafra':<{pin_pass_col_with}}| {'OTP':<{pin_pass_col_with}}")
-        acc_dump.append("-" * len(acc_dump[0]))
+        acc_dump.append(f"| {'PJ':^{COL_WITH_PJ}}| {'Email':^{COL_WITH_EMAIL}}| {'Password':^{COL_WITH_PASS}}| {'OTP':^{COL_WITH_PIN}}| {'Pin':^{COL_WITH_PIN}}| {'Kafra':^{COL_WITH_PIN}}|")
 
         for acc in self.accounts:
             otp_code = ''
@@ -71,17 +99,16 @@ class AccountManager(discord.Client):
                 totp = pyotp.TOTP(acc['OTP'])
                 otp_code = totp.now()
             
-            acc_info  = f"{acc['slug']:<{pj_col_with}}| "
-            acc_info += f"{acc['email']:<{email_col_with}}| "
-            acc_info += f"{acc['password']:<{pass_col_with}}| "
-            acc_info += f"{acc['pin']:<{pin_pass_col_with}}| "
-            acc_info += f"{acc['kafra']:<{pin_pass_col_with}}| "
-            acc_info += f"{otp_code:<{pin_pass_col_with}}"
+            acc_info  = f"| {acc['slug']:<{COL_WITH_PJ}}| "
+            acc_info += f"{acc['email']:<{COL_WITH_EMAIL}}| "
+            acc_info += f"{acc['password']:<{COL_WITH_PASS}}| "
+            acc_info += f"{otp_code:^{COL_WITH_PIN}}| "
+            acc_info += f"{acc['pin']:^{COL_WITH_PIN}}| "
+            acc_info += f"{acc['kafra']:^{COL_WITH_PIN}}|"
 
             acc_dump.append(acc_info)
 
-        acc_joined = "\n".join(acc_dump)
-        return f"```{acc_joined}```\nLastUpdate: {now}"
+        return acc_dump
 
 # Discord bot Intents (permissions):
 intents = discord.Intents.default()
