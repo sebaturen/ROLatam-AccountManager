@@ -29,7 +29,7 @@ class AccountManager(discord.Client):
 
         self.channel = await self.fetch_channel(ACCOUNT_CHANNEL)
         if not MESSAGE_ID:
-            await channel.send("COPY MSG ID")
+            await self.channel.send("COPY MSG ID")
         else:
             msg = await self.channel.fetch_message(MESSAGE_ID)
             self.target_msg.append(msg)
