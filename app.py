@@ -9,8 +9,6 @@ from discord.ext import tasks
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
-ACCOUNT_CHANNEL = os.getenv('ACCOUNT_CHANNEL')
-MESSAGE_ID = os.getenv('MESSAGE_ID')
 
 # formating     ----
 COL_WITH_PJ = 13
@@ -20,20 +18,13 @@ COL_WITH_PIN = 7
 # end formating ----
 
 class AccountManager(discord.Client):
-    channel = None
-    target_msg = []
-    accounts = None
+    channels = {}
+    target_msgs = {}
 
     async def on_ready(self):
         print(f'Logged on as {self.user}!')
 
-        self.channel = await self.fetch_channel(ACCOUNT_CHANNEL)
-        if not MESSAGE_ID:
-            await self.channel.send("COPY MSG ID")
-        else:
-            msg = await self.channel.fetch_message(MESSAGE_ID)
-            self.target_msg.append(msg)
-            await self.start_aligned_loop()
+        await self.start_aligned_loop()
 
     async def start_aligned_loop(self):
         now = datetime.now()
@@ -52,48 +43,68 @@ class AccountManager(discord.Client):
 
     @tasks.loop(seconds=30.0)
     async def update_accounts(self):
-        if self.target_msg:
 
-            with open('accounts.json') as f:
-                self.accounts = json.load(f)['accounts']
+        # base content
+        header = f"| {'PJ':^{COL_WITH_PJ}}| {'Email':^{COL_WITH_EMAIL}}| {'Password':^{COL_WITH_PASS}}| {'OTP':^{COL_WITH_PIN}}| {'Pin':^{COL_WITH_PIN}}| {'Kafra':^{COL_WITH_PIN}}|"
+        sep_line = f"+-{'-' * COL_WITH_PJ}+-{'-' * COL_WITH_EMAIL}+-{'-' * COL_WITH_PASS}+-{'-' * COL_WITH_PIN}+-{'-' * COL_WITH_PIN}+-{'-' * COL_WITH_PIN}+"
+        header = f"\n{sep_line}\n{header}\n{sep_line}"
 
+        # Reload account info
+        with open('accounts.json') as f:
+            accounts = json.load(f)
+
+        # foreach discord account sections
+        for d_info in accounts['discord']:
+
+            if d_info['channel_id'] not in self.channels:
+                self.channels[d_info['channel_id']] = await self.fetch_channel(d_info['channel_id'])
+            channel = self.channels[d_info['channel_id']]
+
+            if not d_info['message_id']:
+                await channel.send("COPY MSG ID")
+                return
+            else:
+                self.target_msgs[d_info['message_id']] = []
+                self.target_msgs[d_info['message_id']].append(await channel.fetch_message(d_info['message_id']))
+            target_msg = self.target_msgs[d_info['message_id']]
+
+            acc_details = await self.get_accounts(d_info['accounts'])
             now = datetime.now().strftime("%H:%M:%S")
-            acc_details = await self.get_accounts()
-
-
-            sep_line = f"+-{'-' * COL_WITH_PJ}+-{'-' * COL_WITH_EMAIL}+-{'-' * COL_WITH_PASS}+-{'-' * COL_WITH_PIN}+-{'-' * COL_WITH_PIN}+-{'-' * COL_WITH_PIN}+"
-            header = f"\n{sep_line}\n{acc_details.pop(0)}\n{sep_line}"
+            
+            # printing msg
             acc_msg = header
             i = 0
-
             while len(acc_details) > 0:
-                acc_msg += f"\n{acc_details.pop(0)}"
-                acc_msg += f"\n{sep_line}"
+                next_line = acc_details.pop(0)
+                acc_msg += f"\n{next_line}\n{sep_line}"
 
-                if len(acc_details) == 0 or ( (len(acc_msg) + len(acc_details[0]) + len(sep_line)) >= 1900):
-                    if len(self.target_msg) <= i:
-                        await self.next_mssg(self.target_msg[i-1])
+                next_item = acc_details[0] if acc_details else ""
+                will_exceed_limit = len(acc_msg) + len(next_item) + len(sep_line) >= 1900
+
+                if not acc_details or will_exceed_limit:
+                    if len(target_msg) <= i:
+                        next_msg = await self.next_mssg(target_msg[i - 1], channel)
+                        target_msg.append(next_msg)
+                    
                     final_msg = f"```{acc_msg}```"
-                    if len(acc_details) == 0:
+                    if not acc_details:
                         final_msg += f"\nLastUpdate: {now}"
-                    await self.target_msg[i].edit(content=final_msg)
+
+                    await target_msg[i].edit(content=final_msg)
                     i += 1
                     acc_msg = header
     
-    async def next_mssg(self, pre_msg):
-        async for msg in self.channel.history(after=pre_msg, limit=1, oldest_first=True):
-            self.target_msg.append(msg)
-            return
+    async def next_mssg(self, pre_msg, channel):
+        async for msg in channel.history(after=pre_msg, limit=1, oldest_first=True):
+            return msg
         
-        new_msg = await self.channel.send("adding...")
-        self.target_msg.append(new_msg)
+        return await channel.send("adding...")
 
-    async def get_accounts(self):
+    async def get_accounts(self, accounts):
 
         acc_dump = []
-        acc_dump.append(f"| {'PJ':^{COL_WITH_PJ}}| {'Email':^{COL_WITH_EMAIL}}| {'Password':^{COL_WITH_PASS}}| {'OTP':^{COL_WITH_PIN}}| {'Pin':^{COL_WITH_PIN}}| {'Kafra':^{COL_WITH_PIN}}|")
 
-        for acc in self.accounts:
+        for acc in accounts:
             otp_code = ''
             if 'OTP' in acc:
                 totp = pyotp.TOTP(acc['OTP'])

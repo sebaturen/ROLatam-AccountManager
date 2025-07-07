@@ -10,7 +10,6 @@ Go to the Discord Developer Portal and create a new application. Enable the bot 
 Add the following environment variables:
 ```
 DISCORD_TOKEN=<your discord token>
-ACCOUNT_CHANNEL=<ID of the channel where the bot should post account data>
 ```
 3. Invite the Bot to Your Server
 Use the OAuth2 URL Generator in the developer portal to generate an invite link.
@@ -19,42 +18,52 @@ Make sure the bot has the following permissions:
 - Manage Messages
 - Read Message History
 
-4. Run the Bot
+4. Add Accounts
+The bot reads account data from an `accounts.json` file. Use the following structure:
+```
+{
+    "discord": [
+        {
+            "channel_id": "<discord channel id>",
+            "message_id": "<first msg id, remove line on first run, then add with your ID>",
+            "accounts": [
+                {
+                    "slug": "<pj name>",
+                    "email": "<login email>",
+                    "password": "<login password>",
+                    "pin": "<login pin>",
+                    "kafra": "<kafra pin>",
+                    "OTP": "<OTP code>"
+                },
+                { ... more accounts }...
+            ]
+        },
+        {
+            "channel_id": "11111",
+            "message_id": "22222",
+            "accounts": [
+                {
+                "slug": "example2",
+                "email": "example2@mail.com",
+                "password": "password123",
+                "pin": "0000",
+                "kafra": "0000",
+                "OTP": "112233"
+                }
+            ]
+        }
+    ]
+}
+```
+
+5. Run the Bot
 ```
 python app.py
 ```
 
-5. Add the Message ID
+6. Add the Message ID
 Once the bot sends its first message, right-click the message and select “Copy Message ID”.
-Update your `.env` file:
+Update your `accounts.json`
 ```
-DISCORD_TOKEN=<your discord token>
-ACCOUNT_CHANNEL=<channel ID>
-MESSAGE_ID=<message ID from the bot>
-```
-
-6. Add Accounts
-The bot reads account data from an `accounts.json` file. Use the following structure:
-```
-{
-    "accounts": [
-        {
-            "slug": "<pj name>",
-            "email": "<login email>",
-            "password": "<login password>",
-            "pin": "<login pin>",
-            "kafra": "<kafra pin>",
-            "OTP": "<OTP code>"
-        },
-        {
-          "slug": "example2",
-          "email": "example2@mail.com",
-          "password": "password123",
-          "pin": "0000",
-          "kafra": "0000",
-          "OTP": "112233"
-        }
-        { ... more accounts }...
-    ]
-}
+    "message_id": "<your msg ID>",
 ```
