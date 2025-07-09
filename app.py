@@ -43,7 +43,12 @@ class AccountManager(discord.Client):
 
     @tasks.loop(seconds=30.0)
     async def update_accounts(self):
+        try:
+            await self.report_accounts()
+        except Exception as e:
+            print(f"[Error!] Critical error, can't send accounts, try again in 30s --> {e}")
 
+    async def report_accounts(self):
         # base content
         header = f"| {'PJ':^{COL_WITH_PJ}}| {'Email':^{COL_WITH_EMAIL}}| {'Password':^{COL_WITH_PASS}}| {'OTP':^{COL_WITH_PIN}}| {'Pin':^{COL_WITH_PIN}}| {'Kafra':^{COL_WITH_PIN}}|"
         sep_line = f"+-{'-' * COL_WITH_PJ}+-{'-' * COL_WITH_EMAIL}+-{'-' * COL_WITH_PASS}+-{'-' * COL_WITH_PIN}+-{'-' * COL_WITH_PIN}+-{'-' * COL_WITH_PIN}+"
