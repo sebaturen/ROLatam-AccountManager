@@ -11,10 +11,10 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 
 # formating     ----
-COL_WITH_PJ = 13
+COL_WITH_PJ = 17
 COL_WITH_EMAIL = 33
-COL_WITH_PASS = 18
-COL_WITH_PIN = 7
+COL_WITH_PASS = 15
+COL_WITH_PIN = 6
 # end formating ----
 
 class AccountManager(discord.Client):
