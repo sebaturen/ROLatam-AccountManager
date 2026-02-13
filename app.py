@@ -45,6 +45,7 @@ class AccountManager(discord.Client):
     async def update_accounts(self):
         try:
             await self.report_accounts()
+            print(f"[Info] Process completed")
         except Exception as e:
             print(f"[Error!] Critical error, can't send accounts, try again in 30s --> {e}")
 
@@ -60,6 +61,7 @@ class AccountManager(discord.Client):
 
         # foreach discord account sections
         for d_info in accounts['discord']:
+            print(f"[Info] Preparing account {d_info['channel_id']}")
 
             if d_info['channel_id'] not in self.channels:
                 self.channels[d_info['channel_id']] = await self.fetch_channel(d_info['channel_id'])
