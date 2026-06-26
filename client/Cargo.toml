@@ -1,0 +1,46 @@
+[package]
+name = "rolatam_client"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.41", features = ["full"] }
+tokio-tungstenite = "0.24"
+futures-util = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# System Tray
+tray-icon = "0.19"
+
+# Base64 encoding for secure storage
+base64 = "0.22"
+
+# Automation dependencies
+opencv = { version = "0.99", features = ["default"] }
+serialport = "4.5"
+clipboard-win = "5.4"
+image = "0.25"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Gdi",
+    "Win32_System_Registry",
+] }
+
+[build-dependencies]
+winres = "0.1"
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true

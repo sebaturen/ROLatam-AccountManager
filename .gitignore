@@ -1,3 +1,11 @@
 .env
 accounts.json
 venv
+__pycache__
+clients_data.json
+
+# Client sensitive files
+client/config.json
+client/client_data.enc
+client/target/
+client/Cargo.lock
