@@ -102,7 +102,7 @@ class ClientManager:
     async def send_login_command(self, interaction: discord.Interaction, account_number):
         user_id = str(interaction.user.id)
         if self.has_logged_in(user_id) and self.has_active_connection(user_id):
-            acc_info = self.get_account_by_number(account_number)
+            acc_info = self.get_account_by_number(str(interaction.channel.id), account_number)
             client = self.connected_clients.get(user_id)
             client['interaction'] = interaction
             websocket = client['websocket']
@@ -132,12 +132,13 @@ class ClientManager:
         
         return False
     
-    def get_account_by_number(self, number):
+    def get_account_by_number(self, channel_id, number):
         with open('accounts.json', 'r', encoding='utf-8') as f:
             accounts_data = json.load(f)
         all_accounts = []
         for ds in accounts_data['discord']:
-            all_accounts.extend(ds['accounts'])
+            if ds['channel_id'] == str(channel_id):
+                all_accounts.extend(ds['accounts'])
         if 1 <= number <= len(all_accounts):
             return all_accounts[number-1]
         
